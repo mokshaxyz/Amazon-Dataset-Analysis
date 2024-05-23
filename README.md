@@ -1,10 +1,10 @@
+Sales Data Analysis
+This project analyzes sales data from a CSV file. The data includes information about items sold, users who purchased them, ratings, timestamps, product categories, brands, and more. The analysis focuses on yearly sales, peak buying times, most sold product categories, gender-based analysis, brand preferences, and product performance.
+
 Collaborators : 
 Moksha - worked on 3 trends , parsecv fucntion , report , compiling the code , testing of code .
 Shanaya Bajaj - Worked on 1 trend , report , parsecv function
 Naisha Sheth : worked on 1 trend , report.
-
-Sales Data Analysis
-This project analyzes sales data from a CSV file. The data includes information about items sold, users who purchased them, ratings, timestamps, product categories, brands, and more. The analysis focuses on yearly sales, peak buying times, most sold product categories, gender-based analysis, brand preferences, and product performance.
 
 Additionally, text files containing the code for each individual trend analysis and a report with a full detailed analysis are included in the project.
 
@@ -14,8 +14,7 @@ Getting Started
 Data Structure
 Functions
 Running the Analysis
-Additional Files
-Contact
+
 Introduction
 This project is designed to parse and analyze sales data from an e-commerce dataset. The primary goals are to understand sales trends over the years, identify peak buying periods, determine the most popular product categories, and analyze purchasing behavior based on gender.
 
