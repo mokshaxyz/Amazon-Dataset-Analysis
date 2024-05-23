@@ -1,0 +1,129 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+// Define a struct to represent each row of data
+struct SalesData {
+    int item_id;
+    int user_id;
+    int rating;
+    string timestamp;
+    string model_attr;
+    string category;
+    string brand;
+    int year;
+    string user_attr; // Represent gender
+};
+
+// Function to parse CSV file and populate data structures
+vector<SalesData> parseCSV(const string& filename) {
+    vector<SalesData> data;
+    ifstream file(filename);
+    string line;
+
+    if (!file.is_open()) {
+        cout << "Error: Unable to open file." << endl;
+        return data;
+    }
+
+    
+    getline(file, line);
+
+    while (getline(file, line)) {
+        SalesData row;
+        string item;
+        size_t pos = 0, start = 0;
+
+
+        for (int i = 0; i < 8; ++i) {
+            pos = line.find(',', start);
+            item = line.substr(start, pos - start);
+            start = pos + 1;
+
+            switch (i) {
+                case 0:
+                    row.item_id = stoi(item);
+                    break;
+                case 1:
+                    row.user_id = stoi(item);
+                    break;
+                case 2:
+                    row.rating = stoi(item);
+                    break;
+                case 3:
+                    row.timestamp = item;
+                    break;
+                case 4:
+                    row.model_attr = item;
+                    break;
+                case 5:
+                    row.category = item;
+                    break;
+                case 6:
+                    row.brand = item;
+                    break;
+                case 7:
+                    row.year = stoi(item);
+                    break;
+            }
+        }
+
+        // Read the last field and categorize by gender
+        row.user_attr = (row.user_id % 2 == 0) ? "Male" : "Female"; 
+        // Add parsed data to vector
+        data.push_back(row);
+    }
+
+    // Close the file
+    file.close();
+
+    return data;
+}
+
+// Function to calculate average rating for each year
+vector<double> calculateAverageRatings(const vector<SalesData>& sales_data) {
+    vector<double> avg_ratings(2024, 0); 
+    vector<int> counts(2024, 0);
+
+    for (const auto& entry : sales_data) {
+        avg_ratings[entry.year] += entry.rating;
+        counts[entry.year]++;
+    }
+
+    vector<double> yearly_avg_ratings(2024);
+    for (int i = 0; i < 2024; ++i) {
+        if (counts[i] != 0) {
+            yearly_avg_ratings[i] = avg_ratings[i] / counts[i];
+        }
+    }
+
+    return yearly_avg_ratings;
+}
+
+int main() {
+    // Parse CSV file
+    vector<SalesData> sales_data = parseCSV("amazon_electronic_clean_dataset_without_index.csv");
+
+    // Check if data is empty
+    if (sales_data.empty()) {
+        cout << "Error: No data found or unable to parse the CSV file." << endl;
+        return 1; // Exit with an error code
+    }
+
+    // Calculate average rating for each year
+    vector<double> yearly_avg_ratings = calculateAverageRatings(sales_data);
+
+    // Print average ratings
+    cout << "Average ratings for each year:" << endl;
+    for (int year = 0; year < 2024; ++year) {
+        if (yearly_avg_ratings[year] != 0) {
+            // Print average rating for this year
+            cout << "Year " << year << ": " << yearly_avg_ratings[year] << endl;
+        }
+    }
+
+    return 0;
+}

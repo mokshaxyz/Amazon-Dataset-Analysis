@@ -1,0 +1,163 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <unordered_map>
+
+using namespace std;
+
+// Define a struct to represent each row of data
+struct SalesData {
+    int item_id;
+    int user_id;
+    int rating;
+    string timestamp;
+    string model_attr;
+    string category;
+    string brand;
+    int year;
+    string user_attr; 
+};
+
+// Custom function to convert string to integer
+int stringToInt(const string& str) {
+    int result = 0;
+    bool negative = false;
+    int i = 0;
+
+    // Check for negative sign
+    if (str[0] == '-') {
+        negative = true;
+        i = 1;
+    }
+
+    // Process each character
+    for (; i < str.size(); ++i) {
+        result = result * 10 + (str[i] - '0');
+    }
+
+    return negative ? -result : result;
+}
+
+// Function to parse CSV file and populate data structures
+vector<SalesData> parseCSV(const string& filename) {
+    vector<SalesData> data;
+    ifstream file(filename);
+    string line;
+
+    if (!file.is_open()) {
+        cout << "Error: Unable to open file." << endl;
+        return data;
+    }
+
+    // Skip the header line
+    getline(file, line);
+
+    while (getline(file, line)) {
+        SalesData row;
+        string item;
+        size_t pos = 0, start = 0;
+
+        // Parse each element of the line
+        for (int i = 0; i < 8; ++i) {
+            pos = line.find(',', start);
+            item = line.substr(start, pos - start);
+            start = pos + 1;
+
+            switch (i) {
+                case 0:
+                    row.item_id = stringToInt(item);
+                    break;
+                case 1:
+                    row.user_id = stringToInt(item);
+                    break;
+                case 2:
+                    row.rating = stringToInt(item);
+                    break;
+                case 3:
+                    row.timestamp = item;
+                    break;
+                case 4:
+                    row.model_attr = item;
+                    break;
+                case 5:
+                    row.category = item;
+                    break;
+                case 6:
+                    row.brand = item;
+                    break;
+                case 7:
+                    row.year = stringToInt(item);
+                    break;
+            }
+        }
+
+        // Read the last field and categorize by gender
+        row.user_attr = (row.user_id % 2 == 0) ? "Male" : "Female"; 
+        // Add parsed data to vector
+        data.push_back(row);
+    }
+
+    // Close the file
+    file.close();
+
+    return data;
+}
+
+// Function to analyze data by gender
+void analyzeDataByGender(const vector<SalesData>& data) {
+    unordered_map<int, int> totalPurchasesByYearMale;
+    unordered_map<int, int> totalPurchasesByYearFemale;
+    unordered_map<int, string> topBrandByYearMale;
+    unordered_map<int, string> topBrandByYearFemale;
+    unordered_map<int, string> topCategoryByYearMale;
+    unordered_map<int, string> topCategoryByYearFemale;
+
+    // Iterate through data to calculate total purchases and identify top brands and categories for each gender in each year
+    for (const auto& entry : data) {
+        int year = entry.year;
+        if (entry.user_attr == "Male") {
+            totalPurchasesByYearMale[year]++;
+            if (topBrandByYearMale[year].empty() || entry.brand > topBrandByYearMale[year]) {
+                topBrandByYearMale[year] = entry.brand;
+            }
+            if (topCategoryByYearMale[year].empty() || entry.category > topCategoryByYearMale[year]) {
+                topCategoryByYearMale[year] = entry.category;
+            }
+        } else if (entry.user_attr == "Female") {
+            totalPurchasesByYearFemale[year]++;
+            if (topBrandByYearFemale[year].empty() || entry.brand > topBrandByYearFemale[year]) {
+                topBrandByYearFemale[year] = entry.brand;
+            }
+            if (topCategoryByYearFemale[year].empty() || entry.category > topCategoryByYearFemale[year]) {
+                topCategoryByYearFemale[year] = entry.category;
+            }
+        }
+    }
+
+    // Print analysis results
+    cout << "Yearly Gender Analysis:\n";
+    for (const auto& entry : totalPurchasesByYearMale) {
+        int year = entry.first;
+        cout << "Year: " << year << endl;
+        cout << "Total Purchases by Males: " << totalPurchasesByYearMale[year] << endl;
+        cout << "Total Purchases by Females: " << totalPurchasesByYearFemale[year] << endl;
+        double percentageChange = ((totalPurchasesByYearFemale[year] - totalPurchasesByYearMale[year]) / static_cast<double>(totalPurchasesByYearMale[year])) * 100.0;
+        cout << "Percentage Change: " << percentageChange << "%" << endl;
+        cout << "Top Brand Purchased by Males: " << topBrandByYearMale[year] << endl;
+        cout << "Top Brand Purchased by Females: " << topBrandByYearFemale[year] << endl;
+        cout << "Top Category Purchased by Males: " << topCategoryByYearMale[year] << endl;
+        cout << "Top Category Purchased by Females: " << topCategoryByYearFemale[year] << endl;
+        cout << endl;
+    }
+}
+
+int main() {
+    // Parse CSV file
+    vector<SalesData> sales_data = parseCSV("amazon_electronic_clean_dataset_without_index.csv");
+
+    // Analyze data by gender
+    analyzeDataByGender(sales_data);
+
+    return 0;
+}

@@ -1,0 +1,197 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <unordered_map>
+
+using namespace std;
+
+// Define a struct to represent each row of data
+struct SalesData {
+    int item_id;
+    int user_id;
+    int rating;
+    string timestamp; 
+    string model_attr;
+    string category;
+    string brand;
+    int year;
+    string user_attr; // Changed from 'gender' to 'user_attr'
+};
+
+// Custom function to convert string to integer
+int stringToInt(const string& s) {
+    int result = 0;
+    for (char c : s) {
+        result = result * 10 + (c - '0');
+    }
+    return result;
+}
+
+// Function to parse CSV file and populate vector of SalesData
+vector<SalesData> parseCSV(const string& filename) {
+    vector<SalesData> data;
+    ifstream file(filename);
+    string line;
+
+    // Check if the file opened successfully
+    if (!file.is_open()) {
+        cout << "Error: Unable to open file." << endl;
+        return data; // Return empty vector
+    }
+
+    // Read header line
+    if (getline(file, line)) {
+        // Skip the header line
+        getline(file, line);
+        while (getline(file, line)) {
+            SalesData row;
+            string item;
+            size_t pos = 0, start = 0;
+
+            // Parse each element of the line
+            for (int i = 0; i < 8; ++i) {
+                pos = line.find(',', start);
+                item = line.substr(start, pos - start);
+                start = pos + 1;
+
+                switch(i) {
+                    case 0:
+                        row.item_id = stringToInt(item);
+                        break;
+                    case 1:
+                        row.user_id = stringToInt(item);
+                        break;
+                    case 2:
+                        row.rating = stringToInt(item);
+                        break;
+                    case 3:
+                        row.timestamp = item;
+                        break;
+                    case 4:
+                        row.model_attr = item;
+                        break;
+                    case 5:
+                        row.category = item;
+                        break;
+                    case 6:
+                        row.brand = item;
+                        break;
+                    case 7:
+                        row.year = stringToInt(item);
+                        break;
+                }
+            }
+            // Read the last field
+            pos = line.find(',', start);
+            row.user_attr = line.substr(start, pos - start); // Changed from 'gender' to 'user_attr'
+
+            // Add parsed data to vector
+            data.push_back(row);
+        }
+    }
+
+    // Close the file
+    file.close();
+
+    return data;
+}
+
+// Function to calculate yearly sales
+vector<pair<int, int>> calculateYearlySales(const vector<SalesData>& data) {
+    vector<pair<int, int>> yearlySales; // Vector to store yearly sales (year, total sales)
+
+    // Iterate through data to calculate yearly sales
+    for (const auto& entry : data) {
+        // Check if the year already exists in the vector
+        bool found = false;
+        for (auto& yearlySale : yearlySales) {
+            if (yearlySale.first == entry.year) {
+                yearlySale.second++;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            yearlySales.emplace_back(entry.year, 1);
+        }
+    }
+
+    return yearlySales;
+}
+
+// Function to identify peak buying times
+pair<int, int> findPeakMonth(const vector<SalesData>& data, int year) {
+    vector<int> monthSales(12, 0); // Vector to store sales for each month (0 to 11)
+
+    // Iterate through data to calculate sales for each month of the specified year
+    for (const auto& entry : data) {
+        if (entry.year == year) {
+            int month = stringToInt(entry.timestamp.substr(5, 2)) - 1; // Extract month from timestamp (1 to 12 -> 0 to 11)
+            monthSales[month]++;
+        }
+    }
+
+    // Find the peak month
+    int maxSales = -1;
+    int peakMonth = -1;
+    for (int i = 0; i < 12; ++i) {
+        if (monthSales[i] > maxSales) {
+            maxSales = monthSales[i];
+            peakMonth = i + 1; // Convert back to month number (0 to 11 -> 1 to 12)
+        }
+    }
+
+    return make_pair(peakMonth, maxSales);
+}
+
+// Function to find the most sold product category in a year
+string findMostSoldProduct(const vector<SalesData>& data, int year) {
+    unordered_map<string, int> categorySales;
+
+    // Count sales for each product category in the specified year
+    for (const auto& entry : data) {
+        if (entry.year == year) {
+            categorySales[entry.category]++;
+        }
+    }
+
+    // Find the most sold product category
+    string mostSoldProduct;
+    int maxSales = -1;
+    for (const auto& pair : categorySales) {
+        if (pair.second > maxSales) {
+            maxSales = pair.second;
+            mostSoldProduct = pair.first;
+        }
+    }
+
+    return mostSoldProduct;
+}
+
+int main() {
+    // Parse CSV file
+    vector<SalesData> sales_data = parseCSV("amazon_electronic_clean_dataset_without_index.csv");
+
+    // Calculate yearly sales
+    vector<pair<int, int>> yearlySales = calculateYearlySales(sales_data);
+
+    // Output yearly sales
+    cout << "Yearly Sales:\n";
+    for (const auto& yearlyPair : yearlySales) {
+        cout << "Year: " << yearlyPair.first << ", Sales: " << yearlyPair.second << endl;
+
+        // Find peak buying month and sales in peak month
+        pair<int, int> peakMonthInfo = findPeakMonth(sales_data, yearlyPair.first);
+        cout << "Peak Buying Month: " << peakMonthInfo.first << ", Sales in Peak Month: " << peakMonthInfo.second << endl;
+
+        // Find most sold product category
+        string mostSoldProduct = findMostSoldProduct(sales_data, yearlyPair.first);
+        cout << "Most Sold Product Category: " << mostSoldProduct << endl;
+
+        cout << endl;
+    }
+
+    return 0;
+}
+

@@ -1,0 +1,170 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <unordered_map>
+
+using namespace std;
+
+// Define a struct to represent each row of data
+struct SalesData {
+    int item_id;
+    int user_id;
+    int rating;
+    string timestamp; // Assuming this is equivalent to user_attr in your CSV
+    string model_attr;
+    string category;
+    string brand;
+    int year;
+    string gender; // If user_attr is actually gender, it should be string
+};
+
+// Function to parse CSV file and populate vector of SalesData
+vector<SalesData> parseCSV(const string& filename) {
+    vector<SalesData> data;
+    ifstream file(filename);
+    string line;
+
+    // Check if the file opened successfully
+    if (!file.is_open()) {
+        cout << "Error: Unable to open file." << endl;
+        return data; // Return empty vector
+    }
+
+    // Read header line
+    if (getline(file, line)) {
+        // Skip the header line
+        getline(file, line);
+        while (getline(file, line)) {
+            SalesData row;
+            string item;
+
+            // Parse each element of the line
+            size_t pos = 0, start = 0;
+            for (int i = 0; i < 8; ++i) {
+                pos = line.find(',', start);
+                item = line.substr(start, pos - start);
+                start = pos + 1;
+
+                switch(i) {
+                    case 0:
+                        row.item_id = stoi(item);
+                        break;
+                    case 1:
+                        row.user_id = stoi(item);
+                        break;
+                    case 2:
+                        row.rating = stoi(item);
+                        break;
+                    case 3:
+                        row.timestamp = item;
+                        break;
+                    case 4:
+                        row.model_attr = item;
+                        break;
+                    case 5:
+                        row.category = item;
+                        break;
+                    case 6:
+                        row.brand = item;
+                        break;
+                    case 7:
+                        row.year = stoi(item);
+                        break;
+                }
+            }
+            // Read the last field
+            pos = line.find(',', start);
+            row.gender = line.substr(start, pos - start);
+
+            // Add parsed data to vector
+            data.push_back(row);
+        }
+    }
+
+    // Close the file
+    file.close();
+
+    return data;
+}
+
+// Function to calculate yearly sales trends
+void analyzeYearlyTrends(const vector<SalesData>& sales) {
+    // Find the range of years in the dataset
+    int minYear = sales[0].year;
+    int maxYear = sales[0].year;
+    for(const SalesData& sale : sales) {
+        minYear = min(minYear, sale.year);
+        maxYear = max(maxYear, sale.year);
+    }
+
+    // Initialize a vector to store yearly sales
+    vector<int> yearlySales(maxYear - minYear + 1, 0);
+
+    // Calculate sales for each year
+    for(const SalesData& sale : sales) {
+        yearlySales[sale.year - minYear]++;
+    }
+
+    // Output the yearly sales trends
+    cout << "Yearly Sales Trends:" << endl;
+    for(int i = 0; i < yearlySales.size(); ++i) {
+        cout << "Year " << minYear + i << ": " << yearlySales[i] << " sales" << endl;
+    }
+}
+
+// Custom sort function
+void customSort(vector<pair<string, int>>& arr) {
+    for (int i = 0; i < arr.size() - 1; ++i) {
+        for (int j = 0; j < arr.size() - i - 1; ++j) {
+            if (arr[j].second < arr[j + 1].second) {
+                pair<string, int> temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+            }
+        }
+    }
+}
+
+// Function to analyze brand preference
+void analyzeBrandPreference(const vector<SalesData>& data) {
+    if (data.empty()) {
+        cout << "No sales data available." << endl;
+        return;
+    }
+
+    // Define a map to store brand preferences and their sales counts
+    unordered_map<string, int> brandSales;
+
+    // Iterate through the data and count the frequency of product sales for each brand
+    for (const auto& entry : data) {
+        brandSales[entry.brand]++;
+    }
+
+    // Convert unordered_map to vector for sorting
+    vector<pair<string, int>> sortedBrands(brandSales.begin(), brandSales.end());
+
+    // Custom sort the brands based on their sales counts
+    customSort(sortedBrands);
+
+    // Output the top brands and their sales counts
+    cout << "Brand Preference Analysis:" << endl;
+    int count = 0;
+    for (const auto& pair : sortedBrands) {
+        cout << pair.first << ": " << pair.second << " units" << endl;
+        if (++count == 5) break; // Output top 5 brands
+    }
+}
+
+int main() {
+    // Parse CSV file
+    vector<SalesData> sales_data = parseCSV("amazon_electronic_clean_dataset_without_index.csv");
+
+    // Analyze yearly sales trends
+    analyzeYearlyTrends(sales_data);
+
+    // Analyze brand preference
+    analyzeBrandPreference(sales_data);
+
+    return 0;
+}
